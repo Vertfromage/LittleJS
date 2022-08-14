@@ -70,6 +70,10 @@ let mouseWheel = 0;
  *  @memberof Input */
 let isUsingGamepad = 0;
 
+/** Prevents input continuing to the default browser handling (false by default)
+ *  @memberof Input */
+let preventDefaultInput = 0;
+
 /** Returns true if gamepad button is down
  *  @param {Number} button
  *  @param {Number} [gamepad=0]
@@ -133,7 +137,7 @@ onkeydown = (e)=>
 {
     if (debug && e.target != document.body) return;
     e.repeat || (inputData[isUsingGamepad = 0][remapKeyCode(e.keyCode)] = 3);
-    debug || e.preventDefault();
+    preventDefaultInput && e.preventDefault();
 }
 onkeyup = (e)=>
 {
@@ -158,7 +162,7 @@ const mouseToScreen = (mousePos)=>
         return vec2(); // fix bug that can occur if user clicks before page loads
 
     const rect = mainCanvas.getBoundingClientRect();
-    return mainCanvasSize.multiply(
+    return vec2(mainCanvas.width, mainCanvas.height).multiply(
         vec2(percent(mousePos.x, rect.left, rect.right), percent(mousePos.y, rect.top, rect.bottom)));
 }
 

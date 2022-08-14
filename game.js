@@ -5,30 +5,29 @@
 'use strict';
 
 // popup errors if there are any (help diagnose issues on mobile devices)
-if (debug)
-    onerror = (...parameters)=> alert(parameters);
+//onerror = (...parameters)=> alert(parameters);
 
 // game variables
-let particleEmiter, clickCount = 0;
+let particleEmiter;
 
 // sound effects
 const sound_click = new Sound([.5,.5]);
 
 // medals
-const medal_example    = new Medal(0, 'Example Medal', 'Medal description goes here.');
+const medal_example = new Medal(0, 'Example Medal', 'Medal description goes here.');
 medalsInit('Hello World');
 
 ///////////////////////////////////////////////////////////////////////////////
 function gameInit()
 {
     // create tile collision and visible tile layer
-    initTileCollision(vec2(32,16));
+    initTileCollision(vec2(32, 16));
     const tileLayer = new TileLayer(vec2(), tileCollisionSize);
     const pos = vec2();
 
     // get level data from the tiles image
     const imageLevelDataRow = 1;
-    mainContext.drawImage(tileImage,0,0);
+    mainContext.drawImage(tileImage, 0, 0);
     for (pos.x = tileCollisionSize.x; pos.x--;)
     for (pos.y = tileCollisionSize.y; pos.y--;)
     {
@@ -65,8 +64,8 @@ function gameInit()
         .99, 1, 1, PI, .05,     // damping, angleDamping, gravityScale, particleCone, fadeRate, 
         .5, 1, 1                // randomness, collide, additive, randomColorLinear, renderOrder
     );
-    particleEmiter.elasticity = .3;
-    particleEmiter.trailScale = 2;
+    particleEmiter.elasticity = .3; // bounce when it collides
+    particleEmiter.trailScale = 2;  // stretch in direction of motion
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,7 +76,7 @@ function gameUpdate()
         // play sound when mouse is pressed
         sound_click.play(mousePos);
 
-        // change particle color
+        // change particle color and set to fade out
         particleEmiter.colorStartA = new Color;
         particleEmiter.colorStartB = randColor();
         particleEmiter.colorEndA = particleEmiter.colorStartA.scale(1,0);
@@ -88,7 +87,7 @@ function gameUpdate()
     }
 
     // move particles to mouse location if on screen
-    if (mousePosScreen.x || mousePosScreen.y)
+    if (mousePosScreen.x)
         particleEmiter.pos = mousePos;
 }
 
@@ -109,17 +108,7 @@ function gameRender()
 function gameRenderPost()
 {
     // draw to overlay canvas for hud rendering
-    const drawText = (text, x, y, size=70) =>
-    {
-        overlayContext.textAlign = 'center';
-        overlayContext.textBaseline = 'top';
-        overlayContext.font = size + 'px arial';
-        overlayContext.fillStyle = '#fff';
-        overlayContext.lineWidth = 3;
-        overlayContext.strokeText(text, x, y);
-        overlayContext.fillText(text, x, y);
-    }
-    drawText('Hello World', overlayCanvas.width/2, 40);
+    drawTextScreen('Hello World', vec2(overlayCanvas.width/2, 80), 80, new Color, 9);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -53,18 +53,26 @@ let overlayContext;
 let mainCanvasSize = vec2();
 
 /** Convert from screen to world space coordinates
+ *  - if calling outside of render, you may need to manually set mainCanvasSize
  *  @param {Vector2} screenPos
  *  @return {Vector2}
  *  @memberof Draw */
 const screenToWorld = (screenPos)=>
-    screenPos.add(vec2(.5)).subtract(mainCanvasSize.scale(.5)).multiply(vec2(1/cameraScale,-1/cameraScale)).add(cameraPos);
+{
+    ASSERT(mainCanvasSize.x && mainCanvasSize.y, 'mainCanvasSize is invalid');
+    return screenPos.add(vec2(.5)).subtract(mainCanvasSize.scale(.5)).multiply(vec2(1/cameraScale,-1/cameraScale)).add(cameraPos);
+}
 
 /** Convert from world to screen space coordinates
+ *  - if calling outside of render, you may need to manually set mainCanvasSize
  *  @param {Vector2} worldPos
  *  @return {Vector2}
  *  @memberof Draw */
 const worldToScreen = (worldPos)=>
-    worldPos.subtract(cameraPos).multiply(vec2(cameraScale,-cameraScale)).add(mainCanvasSize.scale(.5)).subtract(vec2(.5));
+{
+    ASSERT(mainCanvasSize.x && mainCanvasSize.y, 'mainCanvasSize is invalid');
+    return worldPos.subtract(cameraPos).multiply(vec2(cameraScale,-cameraScale)).add(mainCanvasSize.scale(.5)).subtract(vec2(.5));
+}
 
 /** Draw textured tile centered in world space, with color applied if using WebGL
  *  @param {Vector2} pos                                - Center of the tile in world space
@@ -110,7 +118,7 @@ function drawTile(pos, size=vec2(1), tileIndex=-1, tileSize=tileSizeDefault, col
             if (tileIndex < 0)
             {
                 // if negative tile index, force untextured
-                context.fillStyle = color.rgba();
+                context.fillStyle = color;
                 context.fillRect(-.5, -.5, 1, 1);
             }
             else
@@ -165,7 +173,7 @@ function drawTileScreenSpace(pos, size=vec2(1), tileIndex, tileSize, color, angl
  *  @memberof Draw */
 function drawRectScreenSpace(pos, size, color, angle, useWebGL)
 {
-    drawTileSrceenSpace(pos, size, -1, tileSizeDefault, color, angle, 0, 0, useWebGL);
+    drawTileScreenSpace(pos, size, -1, tileSizeDefault, color, angle, 0, 0, useWebGL);
 }
 
 /** Draw colored line between two points
@@ -227,15 +235,16 @@ function setBlendMode(additive, useWebGL=glEnable)
  *  @memberof Draw */
 function drawTextScreen(text, pos, size=1, color=new Color, lineWidth=0, lineColor=new Color(0,0,0), textAlign='center', font=fontDefault)
 {
-    overlayContext.fillStyle = color.rgba();
-    overlayContext.lineWidth = lineWidth *= cameraScale;
-    overlayContext.strokeStyle = lineColor.rgba();
+    overlayContext.fillStyle = color;
+    overlayContext.lineWidth = lineWidth;
+    overlayContext.strokeStyle = lineColor;
     overlayContext.textAlign = textAlign;
     overlayContext.font = size + 'px '+ font;
     overlayContext.textBaseline = 'middle';
+    overlayContext.lineJoin = 'round';
 
     pos = pos.copy();
-    text.split('\n').forEach(line=>
+    (text+'').split('\n').forEach(line=>
     {
         lineWidth && overlayContext.strokeText(line, pos.x, pos.y);
         overlayContext.fillText(line, pos.x, pos.y);
@@ -255,7 +264,7 @@ function drawTextScreen(text, pos, size=1, color=new Color, lineWidth=0, lineCol
  *  @memberof Draw */
 function drawText(text, pos, size=1, color, lineWidth, lineColor, textAlign, font)
 {
-    drawTextScreen(text, worldToScreen(pos), size*cameraScale, color, lineWidth, lineColor, textAlign, font);
+    drawTextScreen(text, worldToScreen(pos), size*cameraScale, color, lineWidth*cameraScale, lineColor, textAlign, font);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

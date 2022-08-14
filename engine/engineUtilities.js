@@ -255,7 +255,7 @@ class Vector2
     /** Returns a new vector in same direction as this one with the length passed in
      * @param {Number} [length=1]
      * @return {Vector2} */
-    normalize(length=1) { const l = this.length(); return l ? this.scale(length/l) : new Vector2(length); }
+    normalize(length=1) { const l = this.length(); return l ? this.scale(length/l) : new Vector2(0, length); }
 
     /** Returns a new vector clamped to length passed in
      * @param {Number} [length=1]
@@ -300,7 +300,7 @@ class Vector2
 
     /** Returns the area this vector covers as a rectangle
      * @return {Number} */
-    area() { return this.x * this.y; }
+    area() { return abs(this.x * this.y); }
 
     /** Returns a new vector that is p percent between this and the vector passed in
      * @param {Vector2} vector
@@ -388,7 +388,7 @@ class Color
      * @return {Color} */
     lerp(c, p) { return this.add(c.subtract(this).scale(clamp(p))); }
 
-    /** Sets this color given a hue, saturation, lightness , and alpha
+    /** Sets this color given a hue, saturation, lightness, and alpha
      * @param {Number} [hue=0]
      * @param {Number} [saturation=0]
      * @param {Number} [lightness=1]
@@ -409,6 +409,34 @@ class Color
         return this;
     }
 
+    /** Returns this color expressed in hsla format
+     * @return {Array} */
+    getHSLA()
+    {
+        const r = this.r;
+        const g = this.g;
+        const b = this.b;
+        const a = this.a;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const l = (max + min) / 2;
+        
+        let h = 0, s = 0;
+        if (max != min)
+        {
+            let d = max - min;
+            s = l > .5 ? d / (2 - max - min) : d / (max + min);
+            if (r == max)
+                h = (g - b) / d + (g < b ? 6 : 0);
+            else if (g == max)
+                h = (b - r) / d + 2;
+            else if (b == max)
+                h =  (r - g) / d + 4;
+        }
+
+        return [h / 6, s, l, a];
+    }
+
     /** Returns a new color that has each component randomly adjusted
      * @param {Number} [amount=.05]
      * @param {Number} [alphaAmount=0]
@@ -424,15 +452,15 @@ class Color
         ).clamp();
     }
 
-    /** Returns this color expressed as an rgba string
+    /** Returns this color expressed as an CSS color value
      * @return {String} */
-    rgba()      
+    toString()      
     { 
         ASSERT(this.r>=0 && this.r<=1 && this.g>=0 && this.g<=1 && this.b>=0 && this.b<=1 && this.a>=0 && this.a<=1);
         return `rgb(${this.r*255|0},${this.g*255|0},${this.b*255|0},${this.a})`; 
     }
     
-    /** Returns this color expressed as 32 bit integer value
+    /** Returns this color expressed as 32 bit integer RGBA value
      * @return {Number} */
     rgbaInt()  
     {
@@ -440,11 +468,27 @@ class Color
         return (this.r*255|0) + (this.g*255<<8) + (this.b*255<<16) + (this.a*255<<24); 
     }
 
-    /** Returns this color expressed as a string
-     * @param {float} digits - precision to display
+    /** Set this color from a hex code
+     * @param {String} hex - html hex code
+     * @return {Color} */
+    setHex(hex)
+    {
+        const fromHex = (a)=> parseInt(hex.slice(a,a+2), 16)/255;
+        this.r = fromHex(1);
+        this.g = fromHex(3),
+        this.b = fromHex(5);
+        this.a = 1;
+        ASSERT(this.r>=0 && this.r<=1 && this.g>=0 && this.g<=1 && this.b>=0 && this.b<=1);
+        return this;
+    }
+
+    /** Returns this color expressed as a hex code
      * @return {String} */
-    toString(digits=3) 
-    { return `( ${this.r.toFixed(digits)}, ${this.g.toFixed(digits)}, ${this.b.toFixed(digits)}, ${this.a.toFixed(digits)} )`; }
+    getHex()
+    {
+        const toHex = (c)=> ((c=c*255|0)<16 ? '0' : '') + c.toString(16);
+        return '#' + toHex(this.r) + toHex(this.g) + toHex(this.b);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -481,7 +525,7 @@ class Timer
 
     /** Returns true if set and elapsed
      * @return {Boolean} */
-    elapsed() { return time >  this.time; }
+    elapsed() { return time > this.time; }
 
     /** Get how long since elapsed, returns 0 if not set (returns negative if currently active)
      * @return {Number} */
@@ -493,5 +537,5 @@ class Timer
     
     /** Returns this timer expressed as a string
      * @return {String} */
-    toString() { return this.unset() ? 'unset' : Math.abs(this.get()) + ' seconds ' + (this.get()<0 ? 'before' : 'after' ); }
+    toString() { if (debug) { return this.unset() ? 'unset' : Math.abs(this.get()) + ' seconds ' + (this.get()<0 ? 'before' : 'after' ); } }
 }

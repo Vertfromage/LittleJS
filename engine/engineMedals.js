@@ -35,7 +35,7 @@ function medalsInit(saveName)
 {
     // check if medals are unlocked
     medalsSaveName = saveName;
-    debugMedals || medals.forEach(medal=> medal.unlocked = 1 || localStorage[medal.storageKey()]);
+    debugMedals || medals.forEach(medal=> localStorage[medal.storageKey()]);
 }
 
 /** 
@@ -192,7 +192,7 @@ class Newgrounds
         cipher && (this.cryptoJS = CryptoJS());
 
         // get session id from url search params
-        const url = new URL(window.location.href);
+        const url = new URL(location.href);
         this.session_id = url.searchParams.get('ngio_session_id') || 0;
 
         if (this.session_id == 0)

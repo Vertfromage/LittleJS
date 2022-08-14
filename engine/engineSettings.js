@@ -14,7 +14,8 @@
  *  @memberof Settings */
 let canvasMaxSize = vec2(1920, 1200);
 
-/** Fixed size of the canvas, if enabled cavnvas size never changes
+/** Fixed size of the canvas, if enabled canvas size never changes
+ * - you may also need to set mainCanvasSize if using screen space coords in startup
  *  @type {Vector2} 
  *  @default
  *  @memberof Settings */
@@ -52,6 +53,11 @@ let tileFixBleedScale = .3;
  *  @default
  *  @memberof Settings */
 let objectDefaultSize = vec2(1);
+
+/** Enable physics solver for collisions between objects
+ *  @default
+ *  @memberof Settings */
+let enablePhysicsSolver = 1;
 
 /** Default object mass for collison calcuations (how heavy objects are)
  *  @default

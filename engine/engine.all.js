@@ -30,7 +30,7 @@ const enableAsserts = 1;
  *  @memberof Debug */
 const debugPointSize = .5;
 
-/** True if watermark with FPS should be down
+/** True if watermark with FPS should be down, false in release builds
  *  @default
  *  @memberof Debug */
 let showWatermark = 1;
@@ -650,7 +650,7 @@ class Vector2
     /** Returns a new vector in same direction as this one with the length passed in
      * @param {Number} [length=1]
      * @return {Vector2} */
-    normalize(length=1) { const l = this.length(); return l ? this.scale(length/l) : new Vector2(length); }
+    normalize(length=1) { const l = this.length(); return l ? this.scale(length/l) : new Vector2(0, length); }
 
     /** Returns a new vector clamped to length passed in
      * @param {Number} [length=1]
@@ -695,7 +695,7 @@ class Vector2
 
     /** Returns the area this vector covers as a rectangle
      * @return {Number} */
-    area() { return this.x * this.y; }
+    area() { return abs(this.x * this.y); }
 
     /** Returns a new vector that is p percent between this and the vector passed in
      * @param {Vector2} vector
@@ -783,7 +783,7 @@ class Color
      * @return {Color} */
     lerp(c, p) { return this.add(c.subtract(this).scale(clamp(p))); }
 
-    /** Sets this color given a hue, saturation, lightness , and alpha
+    /** Sets this color given a hue, saturation, lightness, and alpha
      * @param {Number} [hue=0]
      * @param {Number} [saturation=0]
      * @param {Number} [lightness=1]
@@ -804,6 +804,34 @@ class Color
         return this;
     }
 
+    /** Returns this color expressed in hsla format
+     * @return {Array} */
+    getHSLA()
+    {
+        const r = this.r;
+        const g = this.g;
+        const b = this.b;
+        const a = this.a;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const l = (max + min) / 2;
+        
+        let h = 0, s = 0;
+        if (max != min)
+        {
+            let d = max - min;
+            s = l > .5 ? d / (2 - max - min) : d / (max + min);
+            if (r == max)
+                h = (g - b) / d + (g < b ? 6 : 0);
+            else if (g == max)
+                h = (b - r) / d + 2;
+            else if (b == max)
+                h =  (r - g) / d + 4;
+        }
+
+        return [h / 6, s, l, a];
+    }
+
     /** Returns a new color that has each component randomly adjusted
      * @param {Number} [amount=.05]
      * @param {Number} [alphaAmount=0]
@@ -819,15 +847,15 @@ class Color
         ).clamp();
     }
 
-    /** Returns this color expressed as an rgba string
+    /** Returns this color expressed as an CSS color value
      * @return {String} */
-    rgba()      
+    toString()      
     { 
         ASSERT(this.r>=0 && this.r<=1 && this.g>=0 && this.g<=1 && this.b>=0 && this.b<=1 && this.a>=0 && this.a<=1);
         return `rgb(${this.r*255|0},${this.g*255|0},${this.b*255|0},${this.a})`; 
     }
     
-    /** Returns this color expressed as 32 bit integer value
+    /** Returns this color expressed as 32 bit integer RGBA value
      * @return {Number} */
     rgbaInt()  
     {
@@ -835,11 +863,27 @@ class Color
         return (this.r*255|0) + (this.g*255<<8) + (this.b*255<<16) + (this.a*255<<24); 
     }
 
-    /** Returns this color expressed as a string
-     * @param {float} digits - precision to display
+    /** Set this color from a hex code
+     * @param {String} hex - html hex code
+     * @return {Color} */
+    setHex(hex)
+    {
+        const fromHex = (a)=> parseInt(hex.slice(a,a+2), 16)/255;
+        this.r = fromHex(1);
+        this.g = fromHex(3),
+        this.b = fromHex(5);
+        this.a = 1;
+        ASSERT(this.r>=0 && this.r<=1 && this.g>=0 && this.g<=1 && this.b>=0 && this.b<=1);
+        return this;
+    }
+
+    /** Returns this color expressed as a hex code
      * @return {String} */
-    toString(digits=3) 
-    { return `( ${this.r.toFixed(digits)}, ${this.g.toFixed(digits)}, ${this.b.toFixed(digits)}, ${this.a.toFixed(digits)} )`; }
+    getHex()
+    {
+        const toHex = (c)=> ((c=c*255|0)<16 ? '0' : '') + c.toString(16);
+        return '#' + toHex(this.r) + toHex(this.g) + toHex(this.b);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -876,7 +920,7 @@ class Timer
 
     /** Returns true if set and elapsed
      * @return {Boolean} */
-    elapsed() { return time >  this.time; }
+    elapsed() { return time > this.time; }
 
     /** Get how long since elapsed, returns 0 if not set (returns negative if currently active)
      * @return {Number} */
@@ -888,7 +932,7 @@ class Timer
     
     /** Returns this timer expressed as a string
      * @return {String} */
-    toString() { return this.unset() ? 'unset' : Math.abs(this.get()) + ' seconds ' + (this.get()<0 ? 'before' : 'after' ); }
+    toString() { if (debug) { return this.unset() ? 'unset' : Math.abs(this.get()) + ' seconds ' + (this.get()<0 ? 'before' : 'after' ); } }
 }
 /**
  * LittleJS Engine Settings
@@ -906,7 +950,8 @@ class Timer
  *  @memberof Settings */
 let canvasMaxSize = vec2(1920, 1200);
 
-/** Fixed size of the canvas, if enabled cavnvas size never changes
+/** Fixed size of the canvas, if enabled canvas size never changes
+ * - you may also need to set mainCanvasSize if using screen space coords in startup
  *  @type {Vector2} 
  *  @default
  *  @memberof Settings */
@@ -944,6 +989,11 @@ let tileFixBleedScale = .3;
  *  @default
  *  @memberof Settings */
 let objectDefaultSize = vec2(1);
+
+/** Enable physics solver for collisions between objects
+ *  @default
+ *  @memberof Settings */
+let enablePhysicsSolver = 1;
 
 /** Default object mass for collison calcuations (how heavy objects are)
  *  @default
@@ -1143,7 +1193,7 @@ class EngineObject
     /** Create an engine object and adds it to the list of objects
      *  @param {Vector2} [position=new Vector2()]    - World space position of the object
      *  @param {Vector2} [size=objectDefaultSize]    - World space size of the object
-     *  @param {Number}  [tileIndex=-1]              - Tile to use to render object, untextured if -1
+     *  @param {Number}  [tileIndex=-1]              - Tile to use to render object (-1 is untextured)
      *  @param {Vector2} [tileSize=tileSizeDefault]  - Size of tile in source pixels
      *  @param {Number}  [angle=0]                   - Angle the object is rotated by
      *  @param {Color}   [color]                     - Color to apply to tile when rendered
@@ -1160,7 +1210,7 @@ class EngineObject
         this.size = size;
         /** @property {Vector2} - Size of object used for drawing, uses size if not set */
         this.drawSize;
-        /** @property {Number}  - Tile to use to render object, untextured if -1 */
+        /** @property {Number}  - Tile to use to render object (-1 is untextured) */
         this.tileIndex = tileIndex;
         /** @property {Vector2} - Size of tile in source pixels */
         this.tileSize = tileSize;
@@ -1172,7 +1222,7 @@ class EngineObject
         this.additiveColor;
 
         // set object defaults
-        /** @property {Number} [mass=objectDefaultMass]                 - How heavy the object is */
+        /** @property {Number} [mass=objectDefaultMass]                 - How heavy the object is, static if 0 */
         this.mass         = objectDefaultMass;
         /** @property {Number} [damping=objectDefaultDamping]           - How much to slow down velocity each frame (0-1) */
         this.damping      = objectDefaultDamping;
@@ -1226,7 +1276,7 @@ class EngineObject
         ASSERT(this.angleDamping >= 0 && this.angleDamping <= 1);
         ASSERT(this.damping >= 0 && this.damping <= 1);
 
-        if (!this.mass) // do not update collision for fixed objects
+        if (!enablePhysicsSolver || !this.mass) // do not update collision for fixed objects
             return;
 
         const wasMovingDown = this.velocity.y < 0;
@@ -1236,7 +1286,7 @@ class EngineObject
             const groundSpeed = this.groundObject.velocity ? this.groundObject.velocity.x : 0;
             this.velocity.x = groundSpeed + (this.velocity.x - groundSpeed) * this.friction;
             this.groundObject = 0;
-            //debugPhysics && debugPoint(this.pos.subtract(vec2(0,this.size.y/2)), '#0f0');
+            //debugOverlay && debugPhysics && debugPoint(this.pos.subtract(vec2(0,this.size.y/2)), '#0f0');
         }
 
         if (this.collideSolidObjects)
@@ -1268,7 +1318,7 @@ class EngineObject
                     if (o.mass) // push away if not fixed
                         o.velocity = o.velocity.subtract(velocity);
                         
-                    debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f00');
+                    debugOverlay && debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f00');
                     continue;
                 }
 
@@ -1331,7 +1381,7 @@ class EngineObject
                     else // bounce if other object is fixed
                         this.velocity.x *= -this.elasticity;
                 }
-                debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f0f');
+                debugOverlay && debugPhysics && debugAABB(this.pos, this.size, o.pos, o.size, '#f0f');
             }
         }
         if (this.collideTiles)
@@ -1464,18 +1514,21 @@ class EngineObject
 
     toString()
     {
-        let text = 'type = ' + this.constructor.name;
-        if (this.pos.x || this.pos.y)
-            text += '\npos = ' + this.pos;
-        if (this.velocity.x || this.velocity.y)
-            text += '\nvelocity = ' + this.velocity;
-        if (this.size.x || this.size.y)
-            text += '\nsize = ' + this.size;
-        if (this.angle)
-            text += '\nangle = ' + this.angle.toFixed(3);
-        if (this.color)
-            text += '\ncolor = ' + this.color;
-        return text;
+        if (debug)
+        {
+            let text = 'type = ' + this.constructor.name;
+            if (this.pos.x || this.pos.y)
+                text += '\npos = ' + this.pos;
+            if (this.velocity.x || this.velocity.y)
+                text += '\nvelocity = ' + this.velocity;
+            if (this.size.x || this.size.y)
+                text += '\nsize = ' + this.size;
+            if (this.angle)
+                text += '\nangle = ' + this.angle.toFixed(3);
+            if (this.color)
+                text += '\ncolor = ' + this.color;
+            return text;
+        }
     }
 }
 /** 
@@ -1533,18 +1586,26 @@ let overlayContext;
 let mainCanvasSize = vec2();
 
 /** Convert from screen to world space coordinates
+ *  - if calling outside of render, you may need to manually set mainCanvasSize
  *  @param {Vector2} screenPos
  *  @return {Vector2}
  *  @memberof Draw */
 const screenToWorld = (screenPos)=>
-    screenPos.add(vec2(.5)).subtract(mainCanvasSize.scale(.5)).multiply(vec2(1/cameraScale,-1/cameraScale)).add(cameraPos);
+{
+    ASSERT(mainCanvasSize.x && mainCanvasSize.y, 'mainCanvasSize is invalid');
+    return screenPos.add(vec2(.5)).subtract(mainCanvasSize.scale(.5)).multiply(vec2(1/cameraScale,-1/cameraScale)).add(cameraPos);
+}
 
 /** Convert from world to screen space coordinates
+ *  - if calling outside of render, you may need to manually set mainCanvasSize
  *  @param {Vector2} worldPos
  *  @return {Vector2}
  *  @memberof Draw */
 const worldToScreen = (worldPos)=>
-    worldPos.subtract(cameraPos).multiply(vec2(cameraScale,-cameraScale)).add(mainCanvasSize.scale(.5)).subtract(vec2(.5));
+{
+    ASSERT(mainCanvasSize.x && mainCanvasSize.y, 'mainCanvasSize is invalid');
+    return worldPos.subtract(cameraPos).multiply(vec2(cameraScale,-cameraScale)).add(mainCanvasSize.scale(.5)).subtract(vec2(.5));
+}
 
 /** Draw textured tile centered in world space, with color applied if using WebGL
  *  @param {Vector2} pos                                - Center of the tile in world space
@@ -1590,7 +1651,7 @@ function drawTile(pos, size=vec2(1), tileIndex=-1, tileSize=tileSizeDefault, col
             if (tileIndex < 0)
             {
                 // if negative tile index, force untextured
-                context.fillStyle = color.rgba();
+                context.fillStyle = color;
                 context.fillRect(-.5, -.5, 1, 1);
             }
             else
@@ -1645,7 +1706,7 @@ function drawTileScreenSpace(pos, size=vec2(1), tileIndex, tileSize, color, angl
  *  @memberof Draw */
 function drawRectScreenSpace(pos, size, color, angle, useWebGL)
 {
-    drawTileSrceenSpace(pos, size, -1, tileSizeDefault, color, angle, 0, 0, useWebGL);
+    drawTileScreenSpace(pos, size, -1, tileSizeDefault, color, angle, 0, 0, useWebGL);
 }
 
 /** Draw colored line between two points
@@ -1707,15 +1768,16 @@ function setBlendMode(additive, useWebGL=glEnable)
  *  @memberof Draw */
 function drawTextScreen(text, pos, size=1, color=new Color, lineWidth=0, lineColor=new Color(0,0,0), textAlign='center', font=fontDefault)
 {
-    overlayContext.fillStyle = color.rgba();
-    overlayContext.lineWidth = lineWidth *= cameraScale;
-    overlayContext.strokeStyle = lineColor.rgba();
+    overlayContext.fillStyle = color;
+    overlayContext.lineWidth = lineWidth;
+    overlayContext.strokeStyle = lineColor;
     overlayContext.textAlign = textAlign;
     overlayContext.font = size + 'px '+ font;
     overlayContext.textBaseline = 'middle';
+    overlayContext.lineJoin = 'round';
 
     pos = pos.copy();
-    text.split('\n').forEach(line=>
+    (text+'').split('\n').forEach(line=>
     {
         lineWidth && overlayContext.strokeText(line, pos.x, pos.y);
         overlayContext.fillText(line, pos.x, pos.y);
@@ -1735,7 +1797,7 @@ function drawTextScreen(text, pos, size=1, color=new Color, lineWidth=0, lineCol
  *  @memberof Draw */
 function drawText(text, pos, size=1, color, lineWidth, lineColor, textAlign, font)
 {
-    drawTextScreen(text, worldToScreen(pos), size*cameraScale, color, lineWidth, lineColor, textAlign, font);
+    drawTextScreen(text, worldToScreen(pos), size*cameraScale, color, lineWidth*cameraScale, lineColor, textAlign, font);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1929,6 +1991,10 @@ let mouseWheel = 0;
  *  @memberof Input */
 let isUsingGamepad = 0;
 
+/** Prevents input continuing to the default browser handling (false by default)
+ *  @memberof Input */
+let preventDefaultInput = 0;
+
 /** Returns true if gamepad button is down
  *  @param {Number} button
  *  @param {Number} [gamepad=0]
@@ -1992,7 +2058,7 @@ onkeydown = (e)=>
 {
     if (debug && e.target != document.body) return;
     e.repeat || (inputData[isUsingGamepad = 0][remapKeyCode(e.keyCode)] = 3);
-    debug || e.preventDefault();
+    preventDefaultInput && e.preventDefault();
 }
 onkeyup = (e)=>
 {
@@ -2017,7 +2083,7 @@ const mouseToScreen = (mousePos)=>
         return vec2(); // fix bug that can occur if user clicks before page loads
 
     const rect = mainCanvas.getBoundingClientRect();
-    return mainCanvasSize.multiply(
+    return vec2(mainCanvas.width, mainCanvas.height).multiply(
         vec2(percent(mousePos.x, rect.left, rect.right), percent(mousePos.y, rect.top, rect.bottom)));
 }
 
@@ -2556,8 +2622,7 @@ function zzfxG
 )
 {
     // init parameters
-    let PI2 = PI*2, sign = v => v>0?1:-1,
-        startSlide = slide *= 500 * PI2 / zzfxR / zzfxR, b=[],
+    let PI2 = PI*2, startSlide = slide *= 500 * PI2 / zzfxR / zzfxR, b=[],
         startFrequency = frequency *= (1 + randomness*rand(-1,1)) * PI2 / zzfxR,
         t=0, tm=0, i=0, j=1, r=0, c=0, s=0, f, length;
         
@@ -2581,15 +2646,15 @@ function zzfxG
         {
             s = shape? shape>1? shape>2? shape>3?         // wave shape
                 Math.sin((t%PI2)**3) :                    // 4 noise
-                Math.max(Math.min(Math.tan(t),1),-1):     // 3 tan
+                max(min(Math.tan(t),1),-1):               // 3 tan
                 1-(2*t/PI2%2+2)%2:                        // 2 saw
-                1-4*abs(Math.round(t/PI2)-t/PI2):    // 1 triangle
+                1-4*abs(Math.round(t/PI2)-t/PI2):         // 1 triangle
                 Math.sin(t);                              // 0 sin
                 
             s = (repeatTime ?
                     1 - tremolo + tremolo*Math.sin(PI2*i/repeatTime) // tremolo
                     : 1) *
-                sign(s)*(abs(s)**shapeCurve) *       // curve 0=square, 2=pointy
+                sign(s)*(abs(s)**shapeCurve) *            // curve 0=square, 2=pointy
                 volume * soundVolume * (                  // envelope
                 i < attack ? i/attack :                   // attack
                 i < attack + decay ?                      // decay
@@ -2650,7 +2715,6 @@ function zzfxM(instruments, patterns, sequence, BPM = 125)
   let notFirstBeat;
   let stop;
   let instrument;
-  let pitch;
   let attenuation;
   let outSampleOffset;
   let isSequenceEnd;
@@ -2669,7 +2733,7 @@ function zzfxM(instruments, patterns, sequence, BPM = 125)
   for (; hasMore; channelIndex++) {
 
     // reset current values
-    sampleBuffer = [hasMore = notFirstBeat = pitch = outSampleOffset = 0];
+    sampleBuffer = [hasMore = notFirstBeat = outSampleOffset = 0];
 
     // for each pattern in sequence
     sequence.forEach((patternIndex, sequenceIndex) => {
@@ -3057,7 +3121,7 @@ constructor(pos, size=tileCollisionSize, tileSize=tileSizeDefault, scale=vec2(1)
             if (tileIndex < 0)
             {
                 // untextured
-                context.fillStyle = color.rgba();
+                context.fillStyle = color;
                 context.fillRect(-.5, -.5, 1, 1);
             }
             else
@@ -3076,7 +3140,8 @@ constructor(pos, size=tileCollisionSize, tileSize=tileSizeDefault, scale=vec2(1)
      *  @param {Vector2} [size=new Vector2(1,1)]
      *  @param {Color}   [color=new Color(1,1,1)]
      *  @param {Number}  [angle=0] */
-    drawRect(pos, size, color, angle) { this.drawTile(pos, size, -1, 0, color, angle); }
+    drawRect(pos, size, color, angle) 
+    { this.drawTile(pos, size, -1, 0, color, angle); }
 }
 /*
     LittleJS Particle System
@@ -3193,7 +3258,7 @@ class ParticleEmitter extends EngineObject
         // particle settings
         /** @property {Number} - How long particles live */
         this.particleTime      = particleTime;
-        /** @property {Number} -  How big are particles at start */
+        /** @property {Number} - How big are particles at start */
         this.sizeStart         = sizeStart;
         /** @property {Number} - How big are particles at end */
         this.sizeEnd           = sizeEnd;
@@ -3399,7 +3464,7 @@ function medalsInit(saveName)
 {
     // check if medals are unlocked
     medalsSaveName = saveName;
-    debugMedals || medals.forEach(medal=> medal.unlocked = 1 || localStorage[medal.storageKey()]);
+    debugMedals || medals.forEach(medal=> localStorage[medal.storageKey()]);
 }
 
 /** 
@@ -3556,7 +3621,7 @@ class Newgrounds
         cipher && (this.cryptoJS = CryptoJS());
 
         // get session id from url search params
-        const url = new URL(window.location.href);
+        const url = new URL(location.href);
         this.session_id = url.searchParams.get('ngio_session_id') || 0;
 
         if (this.session_id == 0)
@@ -3712,7 +3777,7 @@ function glInit()
 
     // setup vertex and fragment shaders
     glShader = glCreateProgram(
-        'precision highp float;'+     // use highp for better accuracy, lowp for better perf
+        'precision highp float;'+     // use highp for better accuracy
         'uniform mat4 m;'+            // transform matrix
         'attribute vec2 p,t;'+        // position, uv
         'attribute vec4 c,a;'+        // color, additiveColor
@@ -3723,7 +3788,7 @@ function glInit()
         'v=t;d=c;e=a;'+               // pass stuff to fragment shader
         '}'                           // end of shader
         ,
-        'precision highp float;'+           // use highp for better accuracy, lowp for better perf
+        'precision highp float;'+           // use highp for better accuracy
         'varying vec2 v;'+                  // uv
         'varying vec4 d,e;'+                // color, additiveColor
         'uniform sampler2D s;'+             // texture
@@ -3909,7 +3974,7 @@ function glFlush()
  *  @memberof WebGL */
 function glCopyToContext(context, forceDraw)
 {
-    if (!glEnable || !glBatchCount) return;
+    if ((!glEnable || !glBatchCount) && !forceDraw) return;
     
     glFlush();
     
@@ -4039,7 +4104,7 @@ gl_VERTEX_BYTE_STRIDE = (4 * 2) * 2 + (4) * 2; // vec2 * 2 + (char * 4) * 2
 const engineName = 'LittleJS';
 
 /** Version of engine */
-const engineVersion = '1.2.6';
+const engineVersion = '1.3.8';
 
 /** Frames per second to update objects
  *  @default */
@@ -4130,6 +4195,33 @@ function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRender
         timeReal += frameTimeDeltaMS / 1e3;
         frameTimeBufferMS = min(frameTimeBufferMS + !paused * frameTimeDeltaMS, 50); // clamp incase of slow framerate
 
+        if (canvasFixedSize.x)
+        {
+            // clear set fixed size
+            overlayCanvas.width  = mainCanvas.width  = canvasFixedSize.x;
+            overlayCanvas.height = mainCanvas.height = canvasFixedSize.y;
+            
+            // fit to window by adding space on top or bottom if necessary
+            const aspect = innerWidth / innerHeight;
+            const fixedAspect = mainCanvas.width / mainCanvas.height;
+            mainCanvas.style.width  = overlayCanvas.style.width  = aspect < fixedAspect ? '100%' : '';
+            mainCanvas.style.height = overlayCanvas.style.height = aspect < fixedAspect ? '' : '100%';
+            if (glCanvas)
+            {
+                glCanvas.style.width  = mainCanvas.style.width;
+                glCanvas.style.height = mainCanvas.style.height;
+            }
+        }
+        else
+        {
+            // clear and set size to same as window
+             overlayCanvas.width  = mainCanvas.width  = min(innerWidth,  canvasMaxSize.x);
+             overlayCanvas.height = mainCanvas.height = min(innerHeight, canvasMaxSize.y);
+        }
+        
+        // save canvas size
+        mainCanvasSize = vec2(mainCanvas.width, mainCanvas.height);
+
         if (paused)
         {
             // do post update even when paused
@@ -4165,30 +4257,6 @@ function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRender
 
             // add the time smoothing back in
             frameTimeBufferMS += deltaSmooth;
-        }
-
-        if (canvasFixedSize.x)
-        {
-            // clear set fixed size
-            mainCanvas.width  = canvasFixedSize.x;
-            mainCanvas.height = canvasFixedSize.y;
-            
-            // fit to window by adding space on top or bottom if necessary
-            const aspect = innerWidth / innerHeight;
-            const fixedAspect = mainCanvas.width / mainCanvas.height;
-            mainCanvas.style.width  = overlayCanvas.style.width  = aspect < fixedAspect ? '100%' : '';
-            mainCanvas.style.height = overlayCanvas.style.height = aspect < fixedAspect ? '' : '100%';
-            if (glCanvas)
-            {
-                glCanvas.style.width  = mainCanvas.style.width;
-                glCanvas.style.height = mainCanvas.style.height;
-            }
-        }
-        else
-        {
-            // clear and set size to same as window
-            mainCanvas.width  = min(innerWidth,  canvasMaxSize.x);
-            mainCanvas.height = min(innerHeight, canvasMaxSize.y);
         }
         
         // render sort then render while removing destroyed objects
@@ -4229,8 +4297,8 @@ function engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRender
 // called by engine to setup render system
 function enginePreRender()
 {
-    // save canvas size and clear canvases
-    mainCanvasSize = vec2(overlayCanvas.width = mainCanvas.width, overlayCanvas.height = mainCanvas.height);
+    // save canvas size
+    mainCanvasSize = vec2(mainCanvas.width, mainCanvas.height);
 
     // disable smoothing for pixel art
     mainContext.imageSmoothingEnabled = !cavasPixelated;

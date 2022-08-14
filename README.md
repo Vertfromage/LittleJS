@@ -4,7 +4,7 @@
 
 LittleJS is a super lightweight JavaScript game engine with a fast hybrid rendering system. It provides everything necessary to make amazing games, including rendering, physics, particles, sound effects, music, input handling, and debug tools. LittleJS is designed to be extremely small yet powerful enough for a variety of applications, from game jams to commercial releases. The code is very well documented with a variety of examples to get you started. Choo-Choo! 🚂
 
-## [LittleJS Documentation](https://killedbyapixel.github.io/LittleJS/docs) - [LittleJS Trailer](https://youtu.be/chuBzGjv7Ms) - [LittleJS Trello](https://trello.com/b/E9zf1Xak/littlejs) - [LittleJS Discord](https://discord.gg/BupepDka)
+## [LittleJS Documentation](https://killedbyapixel.github.io/LittleJS/docs) - [LittleJS Trailer](https://youtu.be/chuBzGjv7Ms) - [LittleJS Discord](https://discord.gg/zb7hcGkyZe)
 
 ![LittleJS Screenshot](examples/screenshot.jpg)
 
@@ -18,7 +18,7 @@ LittleJS is a super lightweight JavaScript game engine with a fast hybrid render
 
 ## Features
 
-- Extremely tiny footprint with no dependencies, less than 50 KB uncompressed.
+- Very small footprint with no dependencies
 - Can update and render 10,000+ objects at 60fps, often many times more
 - Object oriented system with fast 2D physics and collision handling for axis aligned boxes
 - Positional audio effects with [zzfx](https://killedbyapixel.github.io/ZzFX/) and music with [zzfxm](https://keithclark.github.io/ZzFXM/), mp3s, or wavs
@@ -29,7 +29,8 @@ LittleJS is a super lightweight JavaScript game engine with a fast hybrid render
 - Debug tools and debug rendering system
 - [Full documentation](https://killedbyapixel.github.io/LittleJS/docs) automatically generated from the source code block tags with [JSDoc](https://github.com/jsdoc/jsdoc)
 - Build system automatically combines everything, minifies, and removes unused code
-- For size coding competitions like [js13kGames](https://js13kgames.com/), starter project builds to a 7KB zip with [Roadroller](https://github.com/lifthrasiir/roadroller)
+- For size coding competitions like [js13kGames](https://js13kgames.com/), starter project builds to a 7KB zip file
+- (https://github.com/lifthrasiir/roadroller)
 - Easily build a Windows executable with [Electron](https://www.electronjs.org/) for distribution on platforms like Steam
 - Open Source with the [MIT license](https://github.com/KilledByAPixel/LittleJS/blob/main/LICENSE) so it can be used for anything you want
 
@@ -41,11 +42,13 @@ To easily include LittleJS in your game, you can use one of the 3 pre-built js f
 - [engine.all.release.js](https://github.com/KilledByAPixel/LittleJS/blob/main/engine/engine.all.release.js) - The engine optimized for release builds
 - [engine.all.min.js](https://github.com/KilledByAPixel/LittleJS/blob/main/engine/engine.all.min.js) - The engine in release mode and minified
 
-The hello world example includes a batch file [build.bat](https://github.com/KilledByAPixel/LittleJS/blob/main/build.bat) that compresses everything into a tiny zip file using Google Closure, UglifyJS, Roadroller, and ECT.
+The hello world example includes a batch file [build.bat](https://github.com/KilledByAPixel/LittleJS/blob/main/build.bat) that compresses everything into a tiny zip file using Google Closure, UglifyJS, Roadroller, and ECT. You must run [buildSetup.bat](https://github.com/KilledByAPixel/LittleJS/blob/main/buildSetup.bat) to install the necessary npm dependencies.
 
 ## Games Made With LittleJS
 
-- [Space Huggers](https://github.com/KilledByAPixel/SpaceHuggers) - A more developed version of the platformer example
+- [Space Huggers](https://www.newgrounds.com/portal/view/819609) - Run and gun platformer with procedural levels
+- [Space Huggers - JS13k Edition](https://github.com/KilledByAPixel/SpaceHuggers) - Original js13k game with source code
+- [Isletopia](https://store.steampowered.com/app/1861260/Isletopia) - Relaxing strategy game of greenifying barren islands
 - Send me your games!
 
 ![LittleJS Logo](favicon.png)

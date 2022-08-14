@@ -240,7 +240,7 @@ declare const enableAsserts: 1;
  *  @default
  *  @memberof Debug */
 declare const debugPointSize: 0.5;
-/** True if watermark with FPS should be down
+/** True if watermark with FPS should be down, false in release builds
  *  @default
  *  @memberof Debug */
 declare let showWatermark: number;
@@ -622,28 +622,34 @@ declare class Color {
      * @param {Number} percent
      * @return {Color} */
     lerp(c: any, p: any): Color;
-    /** Sets this color given a hue, saturation, lightness , and alpha
+    /** Sets this color given a hue, saturation, lightness, and alpha
      * @param {Number} [hue=0]
      * @param {Number} [saturation=0]
      * @param {Number} [lightness=1]
      * @param {Number} [alpha=1]
      * @return {Color} */
     setHSLA(h?: number, s?: number, l?: number, a?: number): Color;
+    /** Returns this color expressed in hsla format
+     * @return {Array} */
+    getHSLA(): any[];
     /** Returns a new color that has each component randomly adjusted
      * @param {Number} [amount=.05]
      * @param {Number} [alphaAmount=0]
      * @return {Color} */
     mutate(amount?: number, alphaAmount?: number): Color;
-    /** Returns this color expressed as an rgba string
+    /** Returns this color expressed as an CSS color value
      * @return {String} */
-    rgba(): string;
-    /** Returns this color expressed as 32 bit integer value
+    toString(): string;
+    /** Returns this color expressed as 32 bit integer RGBA value
      * @return {Number} */
     rgbaInt(): number;
-    /** Returns this color expressed as a string
-     * @param {float} digits - precision to display
+    /** Set this color from a hex code
+     * @param {String} hex - html hex code
+     * @return {Color} */
+    setHex(hex: string): Color;
+    /** Returns this color expressed as a hex code
      * @return {String} */
-    toString(digits?: float): string;
+    getHex(): string;
 }
 /**
  * Timer object tracks how long has passed since it was set
@@ -689,7 +695,8 @@ declare class Timer {
  *  @default
  *  @memberof Settings */
 declare let canvasMaxSize: Vector2;
-/** Fixed size of the canvas, if enabled cavnvas size never changes
+/** Fixed size of the canvas, if enabled canvas size never changes
+ * - you may also need to set mainCanvasSize if using screen space coords in startup
  *  @type {Vector2}
  *  @default
  *  @memberof Settings */
@@ -716,6 +723,10 @@ declare let tileFixBleedScale: number;
  *  @default
  *  @memberof Settings */
 declare let objectDefaultSize: Vector2;
+/** Enable physics solver for collisions between objects
+ *  @default
+ *  @memberof Settings */
+declare let enablePhysicsSolver: number;
 /** Default object mass for collison calcuations (how heavy objects are)
  *  @default
  *  @memberof Settings */
@@ -864,7 +875,7 @@ declare class EngineObject {
     /** Create an engine object and adds it to the list of objects
      *  @param {Vector2} [position=new Vector2()]    - World space position of the object
      *  @param {Vector2} [size=objectDefaultSize]    - World space size of the object
-     *  @param {Number}  [tileIndex=-1]              - Tile to use to render object, untextured if -1
+     *  @param {Number}  [tileIndex=-1]              - Tile to use to render object (-1 is untextured)
      *  @param {Vector2} [tileSize=tileSizeDefault]  - Size of tile in source pixels
      *  @param {Number}  [angle=0]                   - Angle the object is rotated by
      *  @param {Color}   [color]                     - Color to apply to tile when rendered
@@ -875,7 +886,7 @@ declare class EngineObject {
     pos: Vector2;
     /** @property {Vector2} - World space width and height of the object */
     size: Vector2;
-    /** @property {Number}  - Tile to use to render object, untextured if -1 */
+    /** @property {Number}  - Tile to use to render object (-1 is untextured) */
     tileIndex: number;
     /** @property {Vector2} - Size of tile in source pixels */
     tileSize: Vector2;
@@ -883,7 +894,7 @@ declare class EngineObject {
     angle: number;
     /** @property {Color}   - Color to apply when rendered */
     color: Color;
-    /** @property {Number} [mass=objectDefaultMass]                 - How heavy the object is */
+    /** @property {Number} [mass=objectDefaultMass]                 - How heavy the object is, static if 0 */
     mass: number;
     /** @property {Number} [damping=objectDefaultDamping]           - How much to slow down velocity each frame (0-1) */
     damping: number;
@@ -981,11 +992,13 @@ declare let overlayContext: CanvasRenderingContext2D;
  *  @memberof Draw */
 declare let mainCanvasSize: Vector2;
 /** Convert from screen to world space coordinates
+ *  - if calling outside of render, you may need to manually set mainCanvasSize
  *  @param {Vector2} screenPos
  *  @return {Vector2}
  *  @memberof Draw */
 declare function screenToWorld(screenPos: Vector2): Vector2;
 /** Convert from world to screen space coordinates
+ *  - if calling outside of render, you may need to manually set mainCanvasSize
  *  @param {Vector2} worldPos
  *  @return {Vector2}
  *  @memberof Draw */
@@ -1089,6 +1102,9 @@ declare let mouseWheel: number;
 /** Returns true if user is using gamepad (has more recently pressed a gamepad button)
  *  @memberof Input */
 declare let isUsingGamepad: number;
+/** Prevents input continuing to the default browser handling (false by default)
+ *  @memberof Input */
+declare let preventDefaultInput: number;
 /** Returns true if gamepad button is down
  *  @param {Number} button
  *  @param {Number} [gamepad=0]
@@ -1425,7 +1441,7 @@ declare class ParticleEmitter extends EngineObject {
     randomColorLinear: boolean;
     /** @property {Number} - How long particles live */
     particleTime: number;
-    /** @property {Number} -  How big are particles at start */
+    /** @property {Number} - How big are particles at start */
     sizeStart: number;
     /** @property {Number} - How big are particles at end */
     sizeEnd: number;
@@ -1439,6 +1455,8 @@ declare class ParticleEmitter extends EngineObject {
     fadeRate: number;
     /** @property {Number} - Apply extra randomness percent */
     randomness: number;
+    /** @property {Number} - Do particles collide against tiles */
+    collideTiles: boolean;
     /** @property {Number} - Should particles use addtive blend */
     additive: boolean;
     /** @property {Number} - If set the partile is drawn as a trail, stretched in the drection of velocity */
@@ -1612,7 +1630,7 @@ declare const gl_VERTEX_BYTE_STRIDE: number;
 /** Name of engine */
 declare const engineName: "LittleJS";
 /** Version of engine */
-declare const engineVersion: "1.2.6";
+declare const engineVersion: "1.3.8";
 /** Frames per second to update objects
  *  @default */
 declare const frameRate: 60;
