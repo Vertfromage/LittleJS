@@ -30,7 +30,6 @@ LittleJS is a super lightweight JavaScript game engine with a fast hybrid render
 - [Full documentation](https://killedbyapixel.github.io/LittleJS/docs) automatically generated from the source code block tags with [JSDoc](https://github.com/jsdoc/jsdoc)
 - Build system automatically combines everything, minifies, and removes unused code
 - For size coding competitions like [js13kGames](https://js13kgames.com/), starter project builds to a 7KB zip file
-- (https://github.com/lifthrasiir/roadroller)
 - Easily build a Windows executable with [Electron](https://www.electronjs.org/) for distribution on platforms like Steam
 - Open Source with the [MIT license](https://github.com/KilledByAPixel/LittleJS/blob/main/LICENSE) so it can be used for anything you want
 
@@ -44,11 +43,27 @@ To easily include LittleJS in your game, you can use one of the 3 pre-built js f
 
 The hello world example includes a batch file [build.bat](https://github.com/KilledByAPixel/LittleJS/blob/main/build.bat) that compresses everything into a tiny zip file using Google Closure, UglifyJS, Roadroller, and ECT. You must run [buildSetup.bat](https://github.com/KilledByAPixel/LittleJS/blob/main/buildSetup.bat) to install the necessary npm dependencies.
 
+## Debugging
+
+Debug builds of LittleJS have a special menu that can be opened by pressing ~, the tilde key.
+
+- ~: Debug Overlay
+- 1: Debug Physics
+- 2: Debug Particles
+- 3: Debug Gamepads
+- 4: God Mode
+- 5: Save Screenshot
+
 ## Games Made With LittleJS
 
 - [Space Huggers](https://www.newgrounds.com/portal/view/819609) - Run and gun platformer with procedural levels
-- [Space Huggers - JS13k Edition](https://github.com/KilledByAPixel/SpaceHuggers) - Original js13k game with source code
+- [Space Huggers - JS13K Edition](https://github.com/KilledByAPixel/SpaceHuggers) - Original js13k game with source code
 - [Isletopia](https://store.steampowered.com/app/1861260/Isletopia) - Relaxing strategy game of greenifying barren islands
+- [Dead Again](https://js13kgames.com/entries/dead-again) - Top down survial horror by [sanojian & repsej](https://github.com/sanojian/js13k_2022)
+- [Hel's Trial](https://js13kgames.com/entries/hels-trial) - Turn based RPG by [Sebastian Dorn](https://github.com/sebadorn/js13k-2022-death)
+- [Bit Butcher](https://js13kgames.com/entries/bit-butcher) - Survival crafting game by [Deathray Games](https://github.com/deathraygames/bit-butcher)
+- [Necrotic Commander](https://js13kgames.com/entries/necrotic-commander) - Tower defense game by [Daniel Jeffery](https://github.com/d-jeffery/NecroticCommander)
+- [Boxing up Bamboo](https://patrickgh3.itch.io/boxing-up-bamboo) - A challenging puzzle game by [Patrick Traynor](https://cwpat.me/about)
 - Send me your games!
 
 ![LittleJS Logo](favicon.png)

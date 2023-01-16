@@ -187,7 +187,7 @@ function drawLine(posA, posB, thickness=.1, color, useWebGL)
 {
     const halfDelta = vec2((posB.x - posA.x)/2, (posB.y - posA.y)/2);
     const size = vec2(thickness, halfDelta.length()*2);
-    drawRect(posA.add(halfDelta), size, color, halfDelta.angle(), 0, 0, useWebGL);
+    drawRect(posA.add(halfDelta), size, color, halfDelta.angle(), useWebGL);
 }
 
 /** Draw directly to a 2d canvas context in world space
@@ -204,7 +204,7 @@ function drawCanvas2D(pos, size, angle, mirror, drawFunction, context = mainCont
     pos = worldToScreen(pos);
     size = size.scale(cameraScale);
     context.save();
-    context.translate(pos.x+.5|0, pos.y-.5|0);
+    context.translate(pos.x+.5|0, pos.y+.5|0);
     context.rotate(angle);
     context.scale(mirror ? -size.x : size.x, size.y);
     drawFunction(context);
@@ -287,7 +287,7 @@ let engineFontImage;
 class FontImage
 {
     /** Create an image font
-     *  @param {Image}   [image] - The image the font is stored in, if undefined the default font is used
+     *  @param {HTMLImageElement}   [image] - The image the font is stored in, if undefined the default font is used
      *  @param {Vector2} [tileSize=vec2(8)] - The size of the font source tiles
      *  @param {Vector2} [paddingSize=vec2(0,1)] - How much extra space to add between characters
      *  @param {Number}  [startTileIndex=0] - Tile index in image where font starts
@@ -324,7 +324,7 @@ class FontImage
         const size = this.tileSize;
         const drawSize = size.add(this.paddingSize).scale(scale);
         const cols = this.image.width / this.tileSize.x |0;
-        text.split('\n').forEach((line, i)=>
+        (text+'').split('\n').forEach((line, i)=>
         {
             const centerOffset = center ? line.length * size.x * scale / 2 |0 : 0;
             for(let j=line.length; j--;)
